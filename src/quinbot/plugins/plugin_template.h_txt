@@ -1,0 +1,23 @@
+#pragma once
+
+#include "../../plugin.h"
+#include "../../bot.h"
+
+namespace quinbot
+{
+namespace plugin
+{
+    class PluginName final : public Plugin
+    {
+    public:
+        PluginName()
+        {
+
+        }
+
+        
+    private:
+
+    };
+}
+}

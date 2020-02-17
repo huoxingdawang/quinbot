@@ -20,6 +20,17 @@ namespace cq::message {
         std::string type;
         std::map<std::string, std::string> data;
 
+        bool operator==( const MessageSegment &rhs ) const
+        {
+            if (type != rhs.type)
+                return false;
+            if (type != "image")
+                return data == rhs.data;
+            std::string l_file_name = std::string(data.at("file"), 0, data.at("file").rfind('.'));
+            std::string r_file_name = std::string(rhs.data.at("file"), 0, rhs.data.at("file").rfind('.'));
+            return l_file_name == r_file_name;
+        }
+
         static MessageSegment text(const std::string &text) { return {"text", {{"text", text}}}; }
         static MessageSegment emoji(const uint32_t id) { return {"emoji", {{"id", std::to_string(id)}}}; }
         static MessageSegment face(const int id) { return {"face", {{"id", std::to_string(id)}}}; }

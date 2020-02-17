@@ -1,0 +1,72 @@
+{
+    "developing" : true,
+
+    // 命令行处理前缀
+    "command_prefixes" : ["#"],
+    
+    // 命令行分割方式 
+    // [0] inner 使用内置分割器 
+    // [1] custom 使用用户提供的分割正则表达式
+    "command_spliter" : 0,
+
+    // 用户提供的分割正则表达式 (如果使用 custom 作为 command_spliter)
+    "command_split_regex" : "",
+
+    // 命令行分割符 (inner 模式下配置)
+    "command_delimiter" : " ",
+
+    // (inner 模式下配置)
+    // 支持多种命令行分隔符 QuinBot 将以 command_delimiter 为首选进行解析
+    // 当解析失败时会尝试 command_multi_delimiters 中的选项
+    // ! 将会导致解析性能低下
+    "command_multi_delimiters" : [],
+
+    // 命令行中字符串段左端起始符号 (inner 模式下配置)
+    "command_arg_range_left" : "\"",
+
+    // 命令行中字符串段右端终止符号 (inner 模式下配置)
+    "command_arg_range_right" : "\"",
+    
+    // 是否对命令行中的命令名中的 ASCII 字符大小写敏感
+    // 该选项关闭时将命令名转换为小写
+    "case_sensitive" : true,
+
+    // 该选项开启时将去除命令行字符串前后的特定字符
+    "stripped" : true,
+
+    // 需要去除的字符集 (在 strip 选项开启时配置)
+    "strip_chars" : " \n\t",
+
+    // 是否允许用户使用命令别名来调用命令
+    "allow_aliases" : true,
+
+    // 是否允许使用前缀式命令
+    "allow_prefix_command" : true,
+
+    // 是否启用日志系统
+    "enable_logger" : true,
+
+    // QuinBot 将使用的日志系统
+    // [0] inner 使用内置日志系统
+    // [1] coolq 使用 CoolQ 的日志系统
+    // [2] both 同时使用两种日志系统
+    "logger_type" : 0,
+
+    // 内置日志系统日志信息保存路径 (在 inner 或 both 模式下有效)
+    "logger_output_file_path" : "quinbot.log",
+
+    // 机器人昵称
+    "nickname" : "川川子",
+
+    // 超级用户 ID
+    "superuser" : 1748065414,
+
+    // QuinBot 监视的个人对话列表
+    "users" : [1748065414],
+
+    // QuinBot 监视的群列表
+    "groups" : [657410856],
+
+    // QuinBot 监视的讨论组列表
+    "discussion_groups" : []
+}
