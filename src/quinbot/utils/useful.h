@@ -20,6 +20,21 @@ namespace util
         return {(int32_t)sys_time.wYear, (int32_t)sys_time.wMonth, (int32_t)sys_time.wDay};
     }
 
+    inline int32_t date_today( const std::string &type )
+    {
+        SYSTEMTIME sys_time;
+        GetLocalTime(&sys_time);
+        if (type == "year")
+            return (int32_t)sys_time.wYear;
+        else if (type == "month")
+            return (int32_t)sys_time.wMonth;
+        else if (type == "day")
+            return (int32_t)sys_time.wDay;
+        else if (type == "hour")
+            return (int32_t)sys_time.wHour;
+        return 0;
+    }
+
     inline std::string date_format_str( int32_t year, int32_t month, int32_t day, const std::string &delimiter = "-" )
     {
         std::stringstream stream;

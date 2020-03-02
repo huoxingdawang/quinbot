@@ -37,6 +37,11 @@ namespace command
             this->error_message = error_message;
         }
 
+        inline std::string what()
+        {
+            return error_message;
+        }
+
         inline bool get_option( std::string option ) const
         {
             return options_.find(option) != options_.end();
@@ -53,9 +58,19 @@ namespace command
         }
 
         template<typename GetterType>
-        GetterType get( std::string key, GetterType default_value, bool must ) const
+        GetterType get( const std::string &key, const GetterType &default_value, bool must ) const
         {
             return _get<GetterType>(key, default_value, must);
+        }
+
+        template<typename GetterType, typename ConverterType>
+        GetterType get( const std::string &key, ConverterType &&converter, const GetterType &default_value, bool must ) const
+        {
+            if (values_.find(key) != values_.end())
+                return ConverterType(values_.at(key));
+            if (must)
+                throw std::underflow_error("有效参数过少");
+            return default_value;
         }
 
         template<typename GetterType>

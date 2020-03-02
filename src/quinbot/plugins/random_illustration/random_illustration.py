@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 import re
 import requests
 import lxml
-from PIL import Image
+from PIL import Image, ImageFilter
 import random
 import os
 
@@ -37,13 +37,18 @@ headers = {
 
 def crop_image(path):
     img = Image.open(path)
-    cropped = img.crop((5, 5, img.size[0] - 5, img.size[1] - 5))
+    cropped = img.crop((2, 2, img.size[0] - 2, img.size[1] - 2))
     cropped.save(path)
+
+def crop_image_out(path, outpath):
+    img = Image.open(path)
+    cropped = img.crop((2, 2, img.size[0] - 2, img.size[1] - 2))
+    cropped.save(outpath)
 
 def download_image(url, is_r18=False):
     r = requests.get('https://search.pstatic.net/common?type=origin&src=' + url, headers=headers, proxies=proxies, timeout=5)
     file_name = url[url.rfind('/') : ]
-    r18 = True
+    is_r18 = True
     save_path = 'D:/CoolQ/CoolQ Pro/data/image/temp/pixiv/' + file_name
     if (r.status_code == 200):
         open(save_path, 'wb').write(r.content)
@@ -90,6 +95,3 @@ def get_illustration_info(r18, num, proxy, keyword):
                 'error_message' : str(e)
             }
         ]
-
-#print(download_image('https://i.pixiv.cat/img-original/img/2019/07/13/18/13/56/75699656_p0.jpg'))
-#print(get_illustration_info(1, 1, 'i.pixiv.cat', '-'))

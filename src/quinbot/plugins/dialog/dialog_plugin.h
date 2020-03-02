@@ -111,10 +111,10 @@ namespace plugin
             {
                 if (!no_reply)
                 {
-                    cq::message::Message msg;
-                    msg += cq::message::MessageSegment::text("👴学会🌶！");
-                    msg += cq::message::MessageSegment::image("B6DCB86562445738385FE3051960670B.jpg");
-                    info.send_back(std::to_string(msg));
+                    util::MessageBuilder msg;
+                    msg .text("👴学会🌶！")
+                        .image("B6DCB86562445738385FE3051960670B.jpg");
+                    info.send_back(msg.str());
                 }
                 cq::logging::debug("teach insert完成", trigger + ": " + response);
             }
@@ -135,8 +135,26 @@ namespace plugin
             std::string ret;
             static const std::string delimiter = "~";
             for (size_t i = 0; i < strs.size() - 1; ++i)
-                ret.append(dialog::escape(strs[i])), ret.append(delimiter);
-            ret.append(dialog::escape(strs.back()));
+            {
+                std::string str = strs[i];
+                if (str == "{YL_RECORD}")
+                    ret.append("[CQ:record,file=tmp/yl.mp3,magic=false]"), ret.append(delimiter);
+                else if (str == "{YL_IMAGE1}")
+                    ret.append("[CQ:image,file=96F1CC94181F120DFFD39385C45CDC3F.jpg]"), ret.append(delimiter);
+                else if (str == "{YL_IMAGE2}")
+                    ret.append("[CQ:image,file=C77A24847733EFB976D3C63DF2CE05D7.jpg]"), ret.append(delimiter);
+                else
+                    ret.append(dialog::escape(strs[i])), ret.append(delimiter);
+            }
+            const std::string &str = strs.back();
+            if (str == "{YL_RECORD}")
+                ret.append("[CQ:record,file=tmp/yl.mp3,magic=false]");
+            else if (str == "{YL_IMAGE1}")
+                ret.append("[CQ:image,file=96F1CC94181F120DFFD39385C45CDC3F.jpg]");
+            else if (str == "{YL_IMAGE2}")
+                ret.append("[CQ:image,file=C77A24847733EFB976D3C63DF2CE05D7.jpg]");
+            else
+                ret.append(dialog::escape(strs.back()));
             return ret;
         }
 
@@ -202,9 +220,14 @@ namespace plugin
     private:
         util::Database &dialog_db_;
 
-        inline bool delete_teach_( const std::string &table_name, const std::string &key )
+        inline bool delete_teach_( const std::string &table_name, const std::string &key_ )
         {
-            return dialog_db_.remove(table_name, "TRIGGER = '" + dialog::wash_str(key) + "'");
+            int32_t size = 0;
+            std::string key = dialog::wash_str(key_);
+            dialog_db_.size(size, table_name, "TRIGGER", "'" + key + "'");
+            if (size == 0)
+                return false;
+            return dialog_db_.remove(table_name, "TRIGGER = '" + key + "'");
         }
     };
 
@@ -299,9 +322,9 @@ namespace plugin
                     if (col == "TRIGGER") { trigger_str = row; }
                     if (col == "RESPONSE") { response_str = row; }
                 }
-                std::regex re(trigger_str);
                 try
                 {
+                    std::regex re(trigger_str);
                     if (std::regex_search(result[0], re))
                     {
                         std::vector<std::string> response_strs;

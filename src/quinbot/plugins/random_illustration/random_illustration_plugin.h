@@ -211,15 +211,16 @@ namespace plugin
         using CommandInfo = command::CommandInfo;
         using json = nlohmann::json;
     public:
-        ILoveSexIllustrationCommand( std::map<int64_t, std::queue<int64_t>> &message_queues, util::Database &index_db, util::Database &group_index_db_ )
+        ILoveSexIllustrationCommand( std::map<int64_t, std::queue<int64_t>> &message_queues, util::Database &index_db, util::Database &group_index_db_, util::Database &local_index_db )
             :   PublicCommand("random"),
                 message_queues_(message_queues),
                 index_db_(index_db),
-                group_index_db_(group_index_db_)
+                group_index_db_(group_index_db_),
+                local_index_db_(local_index_db)
         {
             this->set_aliases({"来点好康的", "来份色图", "来点涩图", "来点色图", "来份涩图", "来点纸片人"});
             this->set_help_message(
-                "格式 (random/来点好康的/来点涩图/来点涩图/来份色图/来份涩图/来点纸片人) [Option r18/色一点/涩一点/色一点!/涩一点!] [Option no_image/noimage/no-image/不显示图片] [Option no_detail/nodetail/no-detail/不显示详细/不显示详情] [Option more/多来几张/多整点] [Option(from_group下配置) dozen/来一打] [Keyword(可选) keyword/tag/关键词]");
+                "格式 (random/来点好康的/来点涩图/来点涩图/来份色图/来份涩图/来点纸片人) [Option r18/色一点/涩一点/色一点!/涩一点!] [Option no_image/noimage/no-image/不显示图片] [Option no_detail/nodetail/no-detail/不显示详细/不显示详情] [Option more/多来几张/多整点] [Option(source=group下配置) dozen/来一打] [Keyword(可选) keyword/tag/关键词] [Keyword(可选) source/src/来源] [Keyword(可选 在source=group下配置) user_id/群友ID/群友id]");
         }
 
         ~ILoveSexIllustrationCommand()
@@ -234,14 +235,15 @@ namespace plugin
             command::ArgsMap args = arg_parse_force_keyword(cl, 
             {
                 {"keyword", {"tag", "关键词"}},
-                {"user_id", {"群友号", "群友ID", "用户"}}
+                {"source", {"src", "来源"}},
+                {"score", {"分数"}},
+                {"user_id", {"群友ID", "群友id", "用户"}},
             },
             {
                 {"r18", {"色一点", "涩一点", "越色越好", "越涩越好", "色一点!", "涩一点!", "越色越好!", "越涩越好!", "色一点！", "涩一点！", "越色越好！", "越涩越好！"}},
                 {"more", {"多来几张", "多整点"}},
                 {"no_image", {"noimage", "no-image", "不显示图片"}},
                 {"no_detail", {"nodetail", "no-detail", "不显示详细", "不显示详情"}},
-                {"from_group", {"来自群友"}},
                 {"from_buffer", {"from_buf", "from-buf", "从现有整"}},
                 {"dozen", {"来一打"}}
             });
@@ -252,20 +254,33 @@ namespace plugin
                 return eExecuteResult::USER_ERROR;
             }
 
+            /*if (info.get_user_id() != 1748065414)
+            {
+                util::MessageBuilder msg;
+                msg .at(info.get_user_id())
+                    .image("DF4F21F4606E8DE85F88B684389AC326.jpg");
+                info.send_back(msg.str());
+                return eExecuteResult::SUCCESS;
+            }*/
+            
+
             bool r18, multi, no_image, no_detail;
             bool from_buffer, from_group;
             std::string keyword;
             int64_t group_user_id = 0;
             bool dozen;
+            std::string source;
+            int32_t score = 0;
 
             r18 = args.get_option("r18");
             multi = args.get_option("more");
             no_image = args.get_option("no_image");
             no_detail = args.get_option("no_detail");
             keyword = args.get<std::string>("keyword", "-", false);
-            from_group = args.get_option("from_group");
             group_user_id = args.get<int64_t>("user_id", 0, false);
             from_buffer = args.get_option("from_buffer");
+            source = args.get<std::string>("source", "lolicon", false);
+            score = args.get<int32_t>("score", 0, false);
 
             dozen = args.get_option("dozen");
 
@@ -274,7 +289,7 @@ namespace plugin
             cq::logging::debug("no_image", std::to_string(no_image));
             cq::logging::debug("no_detail", std::to_string(no_detail));
             cq::logging::debug("keyword", keyword);
-            cq::logging::debug("from_group", std::to_string(from_group));
+            cq::logging::debug("source", source);
             cq::logging::debug("from_buffer", std::to_string(from_buffer));
 
             int num = 1;
@@ -290,7 +305,13 @@ namespace plugin
                 return eExecuteResult::SUCCESS;
             }
 
-            if (from_group)
+            if (source != "group" && source != "local" && source != "lolicon")
+            {
+                info.send_back("Keyword (source) 可选值[local/lolicon/group]");
+                return eExecuteResult::USER_ERROR;
+            }
+
+            if (source == "group")
             {
                 std::vector<GroupIllustrationInfo> arts;
                 random_group_compensate_(num, arts, group_user_id);
@@ -302,6 +323,43 @@ namespace plugin
                 int64_t msg_id = info.send_back(format_result_group_info_(arts, info.get_user_id(), no_image, no_detail));
                 message_queues_[info.get_group_id()].push(msg_id);
                 return eExecuteResult::SUCCESS;
+            }
+
+            if (source == "local")
+            {
+                std::vector<std::string> files;
+                if (multi)
+                    num = util::range_random(3, 5);
+                get_local_illustration_(files, num, keyword, score);
+                if (files.size() == 0)
+                {
+                    info.send_back("本地查找不到相关 关键词请使用英文");
+                    return eExecuteResult::SUCCESS;
+                }
+                for (auto file : files)
+                {
+                    cq::logging::debug("filename", file.substr(file.rfind('/') + 1));
+                    crop_image_(file.substr(file.rfind('/') + 1));
+                }
+
+                util::MessageBuilder msg;
+                for (auto file : files)
+                {
+                    try 
+                    {
+                        util::MessageBuilder msg;
+                        msg.image(file);
+                        int64_t msg_id = info.send_back(std::to_string(msg)); 
+                        message_queues_[info.get_group_id()].push(msg_id); 
+                    } 
+                    catch(...) 
+                    {
+                        info.send_back("这张太大了👴发不出来");
+                    }
+                }
+                
+                return eExecuteResult::SUCCESS;
+                
             }
 
             std::vector<IllustrationInfo> arts;
@@ -337,6 +395,7 @@ namespace plugin
         std::map<int64_t, std::queue<int64_t>> &message_queues_;
         util::Database &index_db_;
         util::Database &group_index_db_;
+        util::Database &local_index_db_;
 
         bool insert_info_( const IllustrationInfo &info ) const
         {
@@ -443,6 +502,77 @@ namespace plugin
                         info.local_file_name = row;
                 }
                 result.push_back(info);
+                return 0;
+            }, &result, err_msg);
+        }
+
+        bool crop_image_( std::string file_name ) const
+        {
+            std::string path = "E:/yandere/data/images/" + file_name;
+            std::string out = cq::dir::root() + "data/image/temp/local/" + file_name;
+            auto &modules = quinbot::bot.get_python_modules();
+
+            PyObject *p_args = PyTuple_New(2);
+            PyObject *p_arg1 = PyUnicode_FromString(path.c_str());
+            PyObject *p_arg2 = PyUnicode_FromString(out.c_str());
+            PyTuple_SetItem(p_args, 0, p_arg1);
+            PyTuple_SetItem(p_args, 1, p_arg2);
+            bool success = false;
+
+            int state_check = PyGILState_Check();
+	        PyGILState_STATE gstate;
+	        if (!state_check)
+		        gstate = PyGILState_Ensure();
+
+            auto &p_module = modules["random_illustration"];
+
+            if (!p_module)
+                quinbot::bot.get_logger().error("Python", "random_illustration模块加载失败");
+            else
+            {
+                PyObject *p_process_func = PyObject_GetAttrString(p_module, "crop_image_out");
+                PyObject *p_ret = PyObject_CallObject(p_process_func, p_args);
+                if (!p_ret)
+                {
+                    quinbot::bot.get_logger().warning("Python", "Python调用crop_image时发生异常");
+                }
+                else
+                    success = true;
+            }
+
+            Py_BEGIN_ALLOW_THREADS;
+            Py_BLOCK_THREADS;
+
+            Py_UNBLOCK_THREADS;
+	        Py_END_ALLOW_THREADS;
+            if (!state_check)
+                PyGILState_Release(gstate);
+            
+            return success;
+        }
+
+        bool get_local_illustration_( std::vector<std::string> &result, int32_t num, std::string keyword, int32_t score ) const
+        {
+            std::string sentence;
+            if (!keyword.empty())
+                sentence = "SELECT * FROM PIC_INDEX WHERE TAGS GLOB '*" + keyword + "*'" + "ORDER BY RANDOM() LIMIT " + std::to_string(num);
+            else 
+                sentence = "SELECT * FROM PIC_INDEX ORDER BY RANDOM() LIMIT " + std::to_string(num);
+            char *err_msg = nullptr;
+            return local_index_db_.execute(sentence, [](void *data, int row_count, char **rows, char **cols) -> int {
+                std::vector<std::string> &result = *reinterpret_cast<std::vector<std::string> *>(data);
+                std::string info;
+                for (int i = 0; i < row_count; ++i)
+                {
+                    std::string row = rows[i];
+                    std::string col = cols[i];
+                    if (col == "FILENAME")
+                    {
+                        info = row;
+                        break;
+                    }
+                }
+                result.push_back("temp/local/" + info);
                 return 0;
             }, &result, err_msg);
         }
@@ -625,7 +755,12 @@ namespace plugin
                 logger.info("SQLite", "数据库group_pic_index打开成功");
             else
                 logger.error("SQLite", "数据库group_pic_index打开失败");
-            manager->register_command<ILoveSexIllustrationCommand>(message_queues_, index_db_, group_index_db_);
+
+            if (local_index_db_.open(cq::dir::app() + "/image_index.db", SQLITE_OPEN_READWRITE | SQLITE_OPEN_NOMUTEX | SQLITE_OPEN_SHAREDCACHE))
+                logger.info("SQLite", "数据库local_pic_index打开成功");
+            else
+                logger.error("SQLite", "数据库local_pic_index打开失败");
+            manager->register_command<ILoveSexIllustrationCommand>(message_queues_, index_db_, group_index_db_, local_index_db_);
             manager->register_command<RecoverCommand>(message_queues_);
             manager->register_command<DonateCommand>(group_index_db_);
         }
@@ -635,12 +770,14 @@ namespace plugin
             auto &manager = bot.get_command_manager();
             index_db_.close();
             group_index_db_.close();
+            local_index_db_.close();
         }
 
     private:
         std::map<int64_t, std::queue<int64_t>> message_queues_;
         util::Database index_db_;
         util::Database group_index_db_;
+        util::Database local_index_db_;
     };
 }
 }

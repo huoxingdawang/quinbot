@@ -17,7 +17,6 @@
 #include "command/command_parser.h"
 #include "command/command_processer.h"
 #include "utils/json.hpp"
-#include "utils/string_slice.h"
 #include "utils/string_utils.h"
 #include "utils/file_utils.h"
 #include "plugin_manager.h"

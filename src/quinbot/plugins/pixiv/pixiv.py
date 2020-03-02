@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from pixivpy3 import *
 import random
 import requests

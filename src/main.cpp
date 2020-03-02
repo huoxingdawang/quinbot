@@ -10,6 +10,7 @@
 #include "quinbot/plugins/welcome/welcome_plugin.h"
 #include "quinbot/plugins/happy/happy_plugin.h"
 #include "quinbot/plugins/pixiv/pixiv_plugin.h"
+#include "quinbot/plugins/timer/timer.h"
 
 #include <cstdlib>
 #include <ctime>
@@ -25,5 +26,6 @@ CQ_MAIN
     quinbot::load<quinbot::plugin::WelcomePlugin>(true);
     quinbot::load<quinbot::plugin::HappyPlugin>(true);
     //quinbot::load<quinbot::plugin::PixivPlugin>(true);
+    quinbot::load<quinbot::plugin::TimerPlugin>(true);
 }
 

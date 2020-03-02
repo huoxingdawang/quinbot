@@ -25,9 +25,12 @@ namespace quinbot::test
         {
             auto &logger = bot.get_logger();
             auto &cl = info.command_line;
-            cq::message::Message msg;
             //msg += cq::message::MessageSegment::at(1748065414);
-            info.send_back("[CQ:at,qq=1748065414]");
+            util::MessageBuilder msg;
+            msg .at(1748065414)
+                .text("\nbuilder_test")
+                .image("B6DCB86562445738385FE3051960670B.jpg");
+            info.send_back(msg.str());
             /*command::ArgsMap args = command::arg_parse(cl, {
                 {"a1", {"A1", "AA"}},
                 {"b1", {"B1", "BB"}},
@@ -84,15 +87,9 @@ namespace quinbot::test
 
         command::eExecuteResult process( const command::CommandInfo &info ) override
         {
-            std::string echo_msg = "Echo!: ";
-            auto &cl = info.command_line;
-            for (size_t i = 0; i < cl.size(); ++i)
-            {
-                echo_msg += cl[i];
-                if (i != cl.size() - 1)
-                    echo_msg += ',';
-            }
-            info.send_back(echo_msg);
+            util::MessageBuilder msg;
+            std::string ss = "[CQ:record,file=tmp/yl.mp3,magic=false]";
+            info.send_back(ss);
             return command::eExecuteResult::SUCCESS;
         }
 
@@ -119,9 +116,32 @@ namespace quinbot::test
             manager->register_command<EchoCommand>();
         }
 
+        void test_send( const std::string &str, int64_t group_id ) const
+        {
+            cq::api::send_group_msg(group_id, str);
+        }
+
         void on_group_msg( const cq::event::GroupMessageEvent &e ) override
         {
+            using namespace std::chrono_literals;
             std::string msg = e.message;
+            util::MessageBuilder back_msg;
+
+            if (e.user_id == 2854196310)
+            {
+                back_msg.at(e.user_id);
+                back_msg.text("\nQ群管家给👴爬爬爬");
+                cq::api::send_group_msg(e.group_id, back_msg.str());
+                e.block();
+                return;
+            }
+
+            if (msg == "[CQ:dice,type=4]")
+            {
+                cq::api::set_group_ban(e.group_id, e.user_id, 44);
+                e.block();
+                return;
+            }
             if (msg == u8"翟狗biss" || msg == u8"翟🐶biss")
                 cq::api::send_group_msg(e.group_id, "确实");
             e.block();

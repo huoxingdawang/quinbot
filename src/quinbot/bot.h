@@ -5,6 +5,7 @@
 #include <memory>
 #include <mutex>
 
+#include "utils/cq_util.h"
 #include "utils/json.hpp"
 #include "utils/file_utils.h"
 #include "utils/python_utils.h"
@@ -24,6 +25,8 @@
 #include "logger.h"
 #include "plugin.h"
 #include "plugin_manager.h"
+
+#include "3rdparty/scheduler/Scheduler.h"
 
 #define INITBOT( Component ) init_##Component##_()
 #define INITBOT_BEFORE( Component ) init_##Component##_before_()
@@ -62,6 +65,7 @@ namespace quinbot
             INITBOT(python);
             INITBOT(config);
             INITBOT(logger);
+            INITBOT(scheduler);
             INITBOT(command_manager);
             INITBOT(command_parser);
             INITBOT(command_processer);
@@ -123,6 +127,11 @@ namespace quinbot
             return python_modules_;
         }
 
+        inline Bosma::Scheduler &get_scheduler()
+        {
+            return *p_scheduler_;
+        }
+
         template<typename EventType>
         inline void command_process( const EventType &event )
         {
@@ -137,6 +146,7 @@ namespace quinbot
         std::shared_ptr<CommandProcesser> p_command_processer_;
         std::shared_ptr<PluginManager> p_plugin_manager_;
         std::map<std::string, PyObject *> python_modules_;
+        std::shared_ptr<Bosma::Scheduler> p_scheduler_;
 
         inline void init_python_()
         {
@@ -212,6 +222,12 @@ namespace quinbot
         {
             p_command_processer_ = std::make_shared<CommandProcesser>(p_command_manager_, p_command_parser_);
             logger_.info(u8"初始化", u8"命令执行器初始化完成");
+        }
+
+        inline void init_scheduler_()
+        {
+            p_scheduler_ = std::make_shared<Bosma::Scheduler>(12);
+            logger_.info("初始化", "定时任务器初始化完成");
         }
     };
 

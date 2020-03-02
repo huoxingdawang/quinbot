@@ -1,0 +1,6 @@
+.vscode
+build
+scripts
+__pycache__
+src/plugins/pixiv
+src/plugins/saucenao
