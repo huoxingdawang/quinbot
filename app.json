@@ -114,14 +114,6 @@
         }
     ],
     "menu": [
-        /*{
-            "name": "菜单 1",
-            "function": "menu_demo_1"
-        },
-        {
-            "name": "菜单 2",
-            "function": "menu_demo_2"
-        }*/
     ],
     "status": [],
     "auth": [

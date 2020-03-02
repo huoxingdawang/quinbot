@@ -2,8 +2,9 @@ cmake_minimum_required(VERSION 3.9)
 project(quinbot)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS "/utf-8 ${CMAKE_CXX_FLAGS}")  # use UTF-8 source files
-set(CMAKE_CXX_FLAGS "/MP ${CMAKE_CXX_FLAGS}")  # build with object level parallelism
+set(CMAKE_CXX_FLAGS "/utf-8 ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "/MP ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-O2 ${CMAKE_CXX_FLAGS}")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
@@ -22,7 +23,6 @@ add_compile_definitions(BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE
                         WIN32_LEAN_AND_MEAN
                         NOMINMAX)
 
-# read app id from app_id.txt
 file(READ "app_id.txt" APP_ID)
 string(STRIP "${APP_ID}" APP_ID)
 set(APP_ID "\"${APP_ID}\"")

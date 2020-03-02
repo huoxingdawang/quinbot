@@ -1,2 +1,5 @@
 boost-algorithm
 libiconv
+sqlite3
+ZLIB
+cpr

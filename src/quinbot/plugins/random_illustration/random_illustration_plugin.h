@@ -252,17 +252,7 @@ namespace plugin
             {
                 info.send_back(args.error_message);
                 return eExecuteResult::USER_ERROR;
-            }
-
-            /*if (info.get_user_id() != 1748065414)
-            {
-                util::MessageBuilder msg;
-                msg .at(info.get_user_id())
-                    .image("DF4F21F4606E8DE85F88B684389AC326.jpg");
-                info.send_back(msg.str());
-                return eExecuteResult::SUCCESS;
-            }*/
-            
+            }        
 
             bool r18, multi, no_image, no_detail;
             bool from_buffer, from_group;
@@ -720,16 +710,7 @@ namespace plugin
 	        Py_END_ALLOW_THREADS;
             if (!state_check)
                 PyGILState_Release(gstate);
-	
-            /*if (success)
-            {
-                logger.debug("uid", std::to_string(result[0].uid));
-                logger.debug("artist", result[0].artist);
-                logger.debug("pid", std::to_string(result[0].pid));
-                logger.debug("title", result[0].title);
-                logger.debug("url", result[0].url);
-                logger.debug("local_file_name", result[0].local_file_name);
-            }*/
+
             return success;
         }
 

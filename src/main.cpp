@@ -9,7 +9,7 @@
 #include "quinbot/plugins/dialog/dialog_plugin.h"
 #include "quinbot/plugins/welcome/welcome_plugin.h"
 #include "quinbot/plugins/happy/happy_plugin.h"
-#include "quinbot/plugins/pixiv/pixiv_plugin.h"
+//#include "quinbot/plugins/pixiv/pixiv_plugin.h"
 #include "quinbot/plugins/timer/timer.h"
 
 #include <cstdlib>
