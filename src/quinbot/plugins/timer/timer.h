@@ -69,8 +69,6 @@ namespace plugin
             cq::logging::debug("time_str", current_hour);
             auto &s = bot.get_scheduler();
             s.at(current_hour, next_timer_, hour);
-
-            
         }
         
     private:

@@ -82,21 +82,13 @@ namespace plugin
             bool add = args.get_option("add");
             std::string trigger;
             std::vector<std::string> responses;
-            try
-            {
+            try {
                 trigger = dialog::wash_str(args.get<std::string>("trigger", "", true));
                 responses.push_back(dialog::wash_str(args.get<std::string>("response", "", true)));
                 for (size_t i = 0; i < args.va_size(); ++i)
                     responses.push_back(dialog::wash_str(args.get_va<std::string>(i, "")));
-            }
-            catch ( const std::underflow_error & )
-            {
-                info.send_back("有效参数过少");
-                return eExecuteResult::USER_ERROR;
-            }
-            catch ( const std::invalid_argument & )
-            {
-                info.send_back("错误的参数解析");
+            } catch ( const exception::ArgsParseError &e ) {
+                info.send_back(e.what());
                 return eExecuteResult::USER_ERROR;
             }
 

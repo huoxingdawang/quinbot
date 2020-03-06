@@ -27,13 +27,13 @@ namespace builtin
             switch (info.type)
             {
                 case eMessageType::PRIVATE:
-                    cq::api::send_private_msg(info.get_user_id(), "Hello, private");
+                    info.send_back("Hello, private");
                     break;
                 case eMessageType::GROUP:
-                    cq::api::send_group_msg(info.get_group_id(), "Hello, group");
+                    info.send_back("Hello, group");
                     break;
                 case eMessageType::DISCUSS:
-                    cq::api::send_discuss_msg(info.get_discuss_id(), "Hello, discuss");
+                    info.send_back("Hello, discuss");
                     break;
             }
             return eExecuteResult::SUCCESS;
@@ -53,18 +53,38 @@ namespace builtin
         {
             configure(
                 {"帮助", "查询命令帮助"},
-                "格式: help [可选 待查命令]\n"
-                "待查命令为空时列出所有可查命令"
+                "格式: help [Keyword(可选) command/命令]\n"
+                "command为空时列出所有可查命令"
             );
         }
 
         eExecuteResult process( const CommandInfo &info ) override
         {
             const CommandLine &cl = info.command_line;
-            if (cl.size() == 0)
+            command::ArgsMap args = arg_parse(cl,
+                {{"command", {"命令"}}},
+                {}
+            );
+
+            if (args.is_bad())
+            {
+                info.send_back(args.error_message);
+                return eExecuteResult::USER_ERROR;
+            }
+
+            std::string command_name;
+            try {
+                command_name = args.get<std::string>("command", "", false);
+            } catch ( const exception::ArgsParseError &e ) {
+                info.send_back(e.what());
+                return eExecuteResult::USER_ERROR;
+            }
+
+            if (command_name.empty())
             {
                 std::string help;
-                for (const auto &str : command_manager_->get_all_help_queryable_commands())
+                auto strs = command_manager_->get_all_help_queryable_commands();
+                for (const auto &str : strs)
                     help += str + '\n';
                 help.pop_back();
                 info.send_back(help);
@@ -72,11 +92,11 @@ namespace builtin
             }
 
             std::string help;
-            if (command_manager_->contains(cl[0]))
-                help = command_manager_->get(cl[0])->help_message();
+            if (command_manager_->contains(command_name))
+                help = command_manager_->get(command_name)->help_message();
             else
             {
-                std::string cname = command_manager_->alias_contains(cl[0]);
+                std::string cname = command_manager_->alias_contains(command_name);
                 if (!cname.empty())
                     help = command_manager_->get(cname)->help_message();
                 else
@@ -114,31 +134,25 @@ namespace builtin
         std::shared_ptr<CommandManager> manager_;
     };
 
-    class BuiltinCommand_Stop : PrivateCommand
+    class BuiltinCommand_Support final : public PublicCommand
     {
-        BuiltinCommand_Stop()
-            :   PrivateCommand("stop")
-        {}
+    public:
+        BuiltinCommand_Support()
+            :   PublicCommand("support")
+        {
+            configure( {"帮咱写"}, "格式 support(帮咱写) GitHub");
+        }
+
+        ~BuiltinCommand_Support() = default;
 
         eExecuteResult process( const CommandInfo &info ) override
         {
-            static size_t index_group_id = 1;
-            int64_t to_stop_group_id;
-            if (info.command_line.try_as_int64(index_group_id, to_stop_group_id))
-            {
-                cq::api::send_group_msg(to_stop_group_id, "It will be stopped");
-                return eExecuteResult::SUCCESS;
-            }
-            else
-            {
-                cq::api::send_private_msg(info.user_id, "The group id is wrong");
-                return eExecuteResult::USER_ERROR;
-            }
-
+            info.send_back("GitHub: https://github.com/brfish/quinbot");
+            return eExecuteResult::SUCCESS;
         }
 
-        ~BuiltinCommand_Stop() = default;
-        
+    private:
+
     };
 
     static void register_all_builtin_commands( std::shared_ptr<CommandManager> &manager )
@@ -146,6 +160,7 @@ namespace builtin
         manager->register_command<BuiltinCommand_Test>();
         manager->register_command<BuiltinCommand_Help>(manager);
         manager->register_command<BuiltinCommand_Manage>(manager);
+        manager->register_command<BuiltinCommand_Support>();
     }
 }
 }

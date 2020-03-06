@@ -44,25 +44,19 @@ namespace command
             this->type = is_group ? eMessageType::GROUP : eMessageType::DISCUSS;
         }
 
-        std::pair<int64_t, int64_t> id()
+        inline std::pair<int64_t, int64_t> id() { return std::make_pair(user_id, group_or_discuss_id); }
+
+        inline std::string get_nickname() const
         {
-            return std::make_pair(user_id, group_or_discuss_id);
+            if (type == eMessageType::GROUP)
+                return cq::api::get_group_member_info(group_or_discuss_id, user_id).nickname;
+            else if (type == eMessageType::PRIVATE)
+                return cq::api::get_stranger_info(user_id).nickname;
         }
 
-        inline int64_t get_user_id() const
-        {
-            return user_id;
-        }
-
-        inline int64_t get_group_id() const
-        {
-            return type == eMessageType::GROUP ? group_or_discuss_id : -1;
-        }
-
-        inline int64_t get_discuss_id() const
-        {
-            return type == eMessageType::DISCUSS ? group_or_discuss_id : -1;
-        }
+        inline int64_t get_user_id() const { return user_id; }
+        inline int64_t get_group_id() const { return type == eMessageType::GROUP ? group_or_discuss_id : -1; }
+        inline int64_t get_discuss_id() const { return type == eMessageType::DISCUSS ? group_or_discuss_id : -1; }
 
         inline int64_t send_back( const std::string &message ) const
         {

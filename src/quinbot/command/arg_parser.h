@@ -101,7 +101,6 @@ namespace command
                     std::string option = prefix.empty() ? *it : std::string(*it, prefix.size());
                     std::string main_key;
                     eFindResult option_result = find_key(main_key, option, options, options.begin(), option_flag);
-                    cq::logging::debug("main_key", main_key.empty() ? "ERRORSTR" : main_key);
                     if (option_result == ALREADY_UESD)
                     {
                         result.set_error(err_already_used_option + "(" + option + ")");
@@ -189,7 +188,6 @@ namespace command
                     else
                     {
                         result.add_option(main_key);
-                        cq::logging::debug("option!", main_key);
                         option_flag.insert(main_key);
                         continue;
                     }
@@ -285,7 +283,6 @@ namespace command
                 if (all_option)
                 {
                     result.add_option(cur);
-                    cq::logging::debug("option", cur);
                     continue;
                 }
                 std::string option_tag = get_option_tag(cur);

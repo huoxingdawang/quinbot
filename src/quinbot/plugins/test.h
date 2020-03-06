@@ -129,7 +129,6 @@ namespace quinbot::test
 
             if (e.user_id == 2854196310)
             {
-                back_msg.at(e.user_id);
                 back_msg.text("\nQ群管家给👴爬爬爬");
                 cq::api::send_group_msg(e.group_id, back_msg.str());
                 e.block();

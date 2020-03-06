@@ -8,18 +8,11 @@
 #include <queue>
 #include <Windows.h>
 
-#include <cpr/cpr.h>
 #include <Python.h>
 #include <sqlite3.h>
 
 #include "../../plugin.h"
 #include "../../bot.h"
-
-#define TIMER_START( ID ) std::chrono::steady_clock::time_point time_start_##ID## = std::chrono::steady_clock::now();
-#define TIMER_END( Message, ID ) \
-std::chrono::steady_clock::time_point time_end_##ID## = std::chrono::steady_clock::now(); \
-std::chrono::duration<double> used_##ID## = time_end_##ID## - time_start_##ID##; \
-bot.get_logger().debug(Message, std::to_string(used_##ID##.count()) + " s");
 
 bool sqlite_index_size( sqlite3 *db, int32_t &result_out, const std::string &table_name )
 {
@@ -71,41 +64,38 @@ namespace plugin
         {
             configure(
                 {"捐图", "添加涩图"},
-                "格式 (donate/捐图/添加/涩图) [涩图1] [涩图2] [涩图3] ...(单次最多10张)"
+                "格式 (donate/捐图/添加/涩图) [VA 涩图...]"
             );
         }
 
         eExecuteResult process( const CommandInfo &info ) override
         {
             auto &cl = info.command_line;
+            command::ArgsMap args = command::arg_parse(cl, {command::VARY_ARGS}, {});
+            if (args.is_bad()) { info.send_back(args.error_message); return eExecuteResult::USER_ERROR; }
+            
             size_t count = 0;
-            for (size_t i = 0; i < cl.size() && count <= max_size; ++i)
+            std::string nickname = info.get_nickname();
+
+            for (size_t i = 0; i < args.va_size(); ++i)
             {
                 if (cl.type_of(i) == command::eCommandArgType::IMAGE)
                 {
                     ++count;
-                    std::string nickname = cq::api::get_group_member_info(info.get_group_id(), info.get_user_id()).nickname;
-                    insert_info_(
-                        {   nickname,
+                    insert_info_({   
+                            nickname,
                             info.get_user_id(),
                             util::get_current_time_str(), 
                             cl.as_image(i).file_name()
                         });
-                    
                 }
             }
-            cq::message::Message msg;
+            util::MessageBuilder msg;
             if (count != 0)
-            {
-                msg += cq::message::MessageSegment::at(info.get_user_id());
-                msg += cq::message::MessageSegment::text("\n宁一共捐了" + std::to_string(count) + "张涩图，感谢宁对涩图事业的发展");
-            }
+                msg.at(info.get_user_id()).text("\n宁一共捐了" + std::to_string(count) + "张涩图，感谢宁对涩图事业的发展");
             else
-            {
-                msg += cq::message::MessageSegment::at(info.get_user_id());
-                msg += cq::message::MessageSegment::text("一张没有，丢人");
-            }
-            info.send_back(std::to_string(msg));
+                msg .at(info.get_user_id()).text("一张没有，丢人");
+            info.send_back(msg.str());
             return eExecuteResult::SUCCESS;
         }
     private:
@@ -143,8 +133,8 @@ namespace plugin
             :   PublicCommand("recover"),
                 message_queues_(message_queues)
         {
-            set_aliases({"回收", "撤回涩图", "♲"});
-            set_help_message("格式 (回收/撤回涩图/♲)");
+            set_aliases({"回收", "撤回涩图"});
+            set_help_message("格式 (回收/撤回涩图)");
         }
 
         eExecuteResult process( const CommandInfo &info ) override
@@ -154,20 +144,16 @@ namespace plugin
             std::queue<int64_t> &message_queue = message_queues_[info.get_group_id()];
             if (message_queue.empty())
             {
-                cq::message::Message msg;
-                msg += cq::message::MessageSegment::text("没有可以回收的");
-                msg += cq::message::MessageSegment::face(146);
-                info.send_back(std::to_string(msg));
+                util::MessageBuilder msg;
+                msg.text("没有什么可以回收的").face(146);
+                info.send_back(msg.str());
                 return eExecuteResult::SUCCESS;
             }
             while (!message_queue.empty())
             {
-                try
-                {
+                try {
                     cq::api::delete_msg(message_queue.front());
-                }
-                catch(...)
-                {
+                } catch( ... ) {
                     ++failed;
                     quinbot::bot.get_logger().warning("撤回消息", "消息撤回失败");
                 }
@@ -176,7 +162,7 @@ namespace plugin
             }
             std::string msg = "完事🌶！一共撤回了" + std::to_string(count) + "条涩图信息";
             if (failed != 0)
-                msg += " 其中有" + std::to_string(failed) + "条撤回失败，很神秘";
+                msg += " 其中有" + std::to_string(failed) + "条撤回失败，很神必";
             info.send_back(msg);
             return eExecuteResult::SUCCESS;
         }
@@ -185,7 +171,7 @@ namespace plugin
         std::map<int64_t, std::queue<int64_t>> &message_queues_;
     };
 
-    class ILoveSexIllustrationCommand final : public command::PublicCommand
+    class RandomIllustrationCommand final : public command::PublicCommand
     {
         struct IllustrationInfo
         {
@@ -211,7 +197,7 @@ namespace plugin
         using CommandInfo = command::CommandInfo;
         using json = nlohmann::json;
     public:
-        ILoveSexIllustrationCommand( std::map<int64_t, std::queue<int64_t>> &message_queues, util::Database &index_db, util::Database &group_index_db_, util::Database &local_index_db )
+        RandomIllustrationCommand( std::map<int64_t, std::queue<int64_t>> &message_queues, util::Database &index_db, util::Database &group_index_db_, util::Database &local_index_db )
             :   PublicCommand("random"),
                 message_queues_(message_queues),
                 index_db_(index_db),
@@ -223,7 +209,7 @@ namespace plugin
                 "格式 (random/来点好康的/来点涩图/来点涩图/来份色图/来份涩图/来点纸片人) [Option r18/色一点/涩一点/色一点!/涩一点!] [Option no_image/noimage/no-image/不显示图片] [Option no_detail/nodetail/no-detail/不显示详细/不显示详情] [Option more/多来几张/多整点] [Option(source=group下配置) dozen/来一打] [Keyword(可选) keyword/tag/关键词] [Keyword(可选) source/src/来源] [Keyword(可选 在source=group下配置) user_id/群友ID/群友id]");
         }
 
-        ~ILoveSexIllustrationCommand()
+        ~RandomIllustrationCommand()
         {
         }
 
@@ -359,7 +345,6 @@ namespace plugin
                 msg += cq::message::MessageSegment::image("E5E317AA442161A12D0F097581928ACC.jpg");
                 msg += cq::message::MessageSegment::text("👴出错了，将从本地已有的随便发一张（极度敷衍）");
                 info.send_back(std::to_string(msg));
-                //random_compensate_(arts);
                 
                 int64_t msg_id = info.send_back(format_result_(arts, info.get_user_id(), no_image, no_detail));
                 message_queues_[info.get_group_id()].push(msg_id);
@@ -741,7 +726,7 @@ namespace plugin
                 logger.info("SQLite", "数据库local_pic_index打开成功");
             else
                 logger.error("SQLite", "数据库local_pic_index打开失败");
-            manager->register_command<ILoveSexIllustrationCommand>(message_queues_, index_db_, group_index_db_, local_index_db_);
+            manager->register_command<RandomIllustrationCommand>(message_queues_, index_db_, group_index_db_, local_index_db_);
             manager->register_command<RecoverCommand>(message_queues_);
             manager->register_command<DonateCommand>(group_index_db_);
         }

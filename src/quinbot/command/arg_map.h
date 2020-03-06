@@ -4,6 +4,7 @@
 #include <string>
 
 #include "../utils/string_utils.h"
+#include "../exceptions/args_parse_error.h"
 
 namespace quinbot
 {
@@ -60,17 +61,25 @@ namespace command
         template<typename GetterType>
         GetterType get( const std::string &key, const GetterType &default_value, bool must ) const
         {
-            return _get<GetterType>(key, default_value, must);
+            try {
+                return _get<GetterType>(key, default_value, must);
+            } catch ( const std::invalid_argument & ) {
+                throw exception::ArgsParseError("错误的参数解析");
+            }
         }
 
         template<typename GetterType, typename ConverterType>
         GetterType get( const std::string &key, ConverterType &&converter, const GetterType &default_value, bool must ) const
         {
-            if (values_.find(key) != values_.end())
-                return ConverterType(values_.at(key));
-            if (must)
-                throw std::underflow_error("有效参数过少");
-            return default_value;
+            try {
+                if (values_.find(key) != values_.end())
+                    return converter(values_.at(key));
+                if (must)
+                    throw exception::ArgsParseError("有效参数过少");
+                return default_value;
+            } catch ( const std::invalid_argument & ) {
+                throw exception::ArgsParseError("错误的参数解析");
+            }
         }
 
         template<typename GetterType>
@@ -102,7 +111,7 @@ template<> \
     if (values_.find(main_key) != values_.end()) \
         return (##Converter##(values_.at(main_key))); \
     if (must) \
-        throw std::underflow_error("有限参数过少"); \
+        throw quinbot::exception::ArgsParseError("有效参数过少"); \
     return default_value; \
 }
 
@@ -112,7 +121,7 @@ template<> \
             if (values_.find(main_key) != values_.end())
                 return static_cast<GetterType>(values_.at(main_key));
             if (must)
-                throw std::underflow_error("有效参数过少");
+                throw exception::ArgsParseError("有效参数过少");
             return default_value;
         }
 
